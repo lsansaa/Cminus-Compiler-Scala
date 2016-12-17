@@ -1,0 +1,23 @@
+ID valor =>sumar
+OPENBRACKET
+INT
+ID valor =>k
+ASSIGN
+NUM valor =>0
+PUNTUACTION valor =>;
+WHILE
+OPENBRACKET
+Lexical Error: Invalid Token, line 3 //Variable k con mayúscula
+MINOR
+NUM valor =>3
+CLOSEBRACKET
+OPENBRACKET
+ID valor =>k
+ASSIGN
+ID valor =>k
+ADD
+NUM valor =>1
+PUNTUACTION valor =>;
+CLOSEBRACKET
+CLOSEBRACKET
+End of File

@@ -1,0 +1,24 @@
+ID valor =>restar
+OPENBRACKET
+CLOSEBRACKET
+OPENBRACKET
+ID valor =>var1
+ASSIGN
+NUM valor =>7
+PUNTUACTION valor =>;
+WHILE
+OPENBRACKET
+ID valor =>var1
+NEQ
+NUM valor =>0
+CLOSEBRACKET
+OPENBRACKET
+ID valor =>var1
+ASSIGN
+ID valor =>var1
+SUST
+NUM valor =>1
+PUNTUACTION valor =>;
+CLOSEBRACKET
+CLOSEBRACKET
+End of File

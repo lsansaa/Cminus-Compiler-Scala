@@ -1,0 +1,15 @@
+vOid main(){
+	%Se declara arreglo de tipo entero
+	int [] aRReglo0;
+	%Variable para controlar ciclo
+	int i ::= 10;
+	/#
+	 #Ciclo que asigna un valor a posiciones del arreglo
+	#/
+	whilE(i>=0){
+		%Se asigna valor en posicion de arreglo
+		aRR_eglo0[i] ::= i;
+		%El valor "i" disminuye valor
+		i ::= i - 1;
+	}
+}

@@ -1,0 +1,10 @@
+int x;
+int y;
+void program(void){
+	int z;
+	z::=1;
+	if(z::=1)x::=2;
+	while(x>0){
+		y ::= y +1;
+	}
+}	

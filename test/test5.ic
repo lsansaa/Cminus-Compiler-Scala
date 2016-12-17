@@ -1,0 +1,9 @@
+void
+VoId
+num ::= 5;
+palabra;
+if(num >= 5){
+	palabra ::= si;
+}else{
+	palabra ::= no;
+}

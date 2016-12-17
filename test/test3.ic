@@ -1,0 +1,6 @@
+restar(){
+	var1 ::= 7;
+	wHiLe (var1 != 0){
+		var1 ::= var1 - 1;
+	}
+}

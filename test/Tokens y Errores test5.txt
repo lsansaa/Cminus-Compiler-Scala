@@ -1,0 +1,26 @@
+ID valor =>num
+ASSIGN
+NUM valor =>5
+PUNTUACTION valor =>;
+ID valor =>palabra
+PUNTUACTION valor =>;
+IF
+OPENBRACKET
+ID valor =>num
+Lexical Error: Invalid Token, line 3 // Mayor o igual escrito alrevez ">="
+NUM valor =>5
+CLOSEBRACKET
+OPENBRACKET
+ID valor =>palabra
+ASSIGN
+ID valor =>si
+PUNTUACTION valor =>;
+CLOSEBRACKET
+ELSE
+OPENBRACKET
+ID valor =>palabra
+Lexical Error: Invalid Token, line 6 //Assing mal escrito, "=" en vez de "::="
+ID valor =>no
+PUNTUACTION valor =>;
+CLOSEBRACKET
+End of File

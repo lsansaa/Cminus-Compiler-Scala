@@ -1,0 +1,7 @@
+error: Lexer is not abstract and does not override abstract method next_token() in Scanner
+public class Lexer implements java_cup.runtime.Scanner {
+       ^
+src/ic/lex/Lexer.java:538: error: next_token() in Lexer cannot implement next_token() in Scanner
+  public Token next_token() throws java.io.IOException {
+               ^
+  return type Token is not compatible with Symbol

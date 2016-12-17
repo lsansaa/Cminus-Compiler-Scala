@@ -1,0 +1,481 @@
+package Parser;
+
+/* Import the class java_cup.runtime.*  */
+import java_cup.runtime.*;
+import java.io.*;
+import Ast.*;
+import ic.lex.Lexer;     
+
+
+action code {:
+	//Hashtable table = new Hashtable();
+:};
+/*Errores que se encontraran*/
+parser code 
+{:
+    public AstNode raiz = null; //     Crea el nodo raiz en nulo.
+    public String produc = ""; //Crea el string de las producciones a concatenar.
+    public String tipoExpresion = ""; //String que guarda el tipo de una expresion
+    public String getProduccion(){
+     return this.produc;     
+    }
+	/* Reporte de error encontrado. */
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error");
+        if (info instanceof java_cup.runtime.Symbol) {
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+            if (s.left >= 0) {                
+                m.append(" en la linea "+ (s.left+1));
+                if (s.right >= 0)
+                    m.append(", columna "+ (s.right+1));
+            }
+        }
+        m.append(" : "+message);
+        System.err.println(m);
+    }
+    /* Cuando se encuentra un error de donde el sistema no puede
+        recuperarse, se lanza un error fatal. Se despliega el mensaje
+        de error y se finaliza la ejecucion. */
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        System.exit(1);
+    }
+
+:};
+
+/* ------------Declaracion de simbolos terminales y no terminales---------- */
+   
+/* Terminales (tokens obtenidos por el analizador lexico).  
+   Terminales que no tienen un valor son listados primero, los terminales que
+   tienen un valor como los enteros son listados en la segunda o demas lineas. */
+   
+   terminal Symbol INT, STRING, ADD, SUBT, DIV, MULT, ASSIGN, IF, ELSE, WHILE, FOR, VOID
+    , RETURN, POT, ROOT, MINOR, MINEQ, MAYOR, MAYEQ, EQ, NEQ, OPENBRACKET, PUNTUACTION, CLOSEBRACKET, OPENBRACKETLL, OPENBRACKETCOR
+    , CLOSEBRACKETLL, CLOSEBRACKETCOR, COMA, COMMENT;
+   terminal String NUM;
+   terminal String ID;
+   /* No terminales usados en la seccion gramatical. 
+
+   Primero se lista los no terminales que tienen un valor Object y despues
+   se lista los no terminales que tienen un entero. Un Object se refiere a que
+   no tienen tipo, pudiendo ser entero o String. */
+
+   non terminal AstNode	program,declaration_list,declaration,var_declaration,fun_declaration,
+   						params,param_list,param,compound_stmt,local_declarations,statement_list,
+   						statement,expression_stmt,selection_stmt,iteration_stmt,while_stmt,
+   						for_stmt,return_stmt,expression,var,simple_expression,
+   						additive_expression,term,factor,exp,call,args,arg_list;
+   non terminal Integer relop,addop,mulop,powop,type_specifier;
+   nonterminal empty; 
+   //Precedencias lo mas importante es la multiplicacion y asi hasta el caso de else e if.
+   //Se utiliza la precedencia por la izq mas info en el informe.
+   
+   
+   precedence left ELSE;
+   precedence left IF;
+   
+
+
+   precedence left MULT, DIV;
+   precedence left ADD, SUBT;
+   precedence nonassoc MAYOR, MINEQ, MINOR, MAYEQ;
+   precedence nonassoc EQ, NEQ;
+   precedence left POT, ROOT;
+
+
+   precedence right ASSIGN;
+
+   start with program;
+   //state 0
+   program::= declaration_list:dl{: 
+   		this.parser.raiz = new AstProgram("programa",dl,dlleft + 1);
+   		this.parser.produc += "PROGRAM::= DECLARATION_LIST\n";
+   		RESULT = this.parser.raiz;
+    :};
+
+
+
+    //state 1
+   declaration_list::= declaration_list:dl declaration:d{:
+         this.parser.produc += "DECLARATION_LIST::= DECLARATION_LIST DECLARATION \n";
+   		RESULT = d;
+   		d.setHermano(dl);
+   :}
+   //state 2
+    | declaration:d{:
+    	this.parser.produc += "DECLARATION_LIST::= DECLARATION \n";
+   		RESULT = d;
+    :};
+
+
+
+    //state 3
+   declaration::= var_declaration:vd{:
+         this.parser.produc += "DECLARATION::= VAR_DECLARATION \n";
+   		RESULT = vd;
+   :}
+   //state 4
+   | fun_declaration:fd{:
+   		this.parser.produc += "DECLARATION::= FUN_DECLARATION \n";
+   		RESULT = fd;
+   :};
+
+
+
+   //state 5
+   var_declaration::= type_specifier:ts ID:id PUNTUACTION{:
+   		this.parser.produc += "VAR_DECLARATION::= TYPE_SPECIFIER ID PUNTUACTION \n";
+   		RESULT = new AstVarDec(ts,id,"varDec",tsleft + 1); //Identifica que no llega un corchete.
+   :}
+   //state 6
+   | type_specifier:ts ID:id OPENBRACKETCOR NUM:num CLOSEBRACKETCOR PUNTUACTION{:
+   		this.parser.produc += "VAR_DECLARATION::= TYPE_SPECIFIER ID OPENBRACKETCOR NUM CLOSEBRACKETCOR PUNTUACTION \n";
+         RESULT = new AstVarDec(ts,id,num,"varDec",tsleft + 1);
+   :};
+
+
+
+   //state 7
+   type_specifier::= INT{:
+   		this.parser.produc += "TYPE_SPECIFIER::= INT \n";
+   		RESULT = sym.INT;
+   :}
+   //state 8
+   | VOID{:
+   		this.parser.produc += "TYPE_SPECIFIER::= VOID \n";
+   		RESULT = sym.VOID;
+   :};
+
+
+
+   //state 9
+   fun_declaration::= type_specifier:ts ID:id OPENBRACKET params:pa CLOSEBRACKET compound_stmt:cs{:
+   		this.parser.produc += "FUN_DECLARATION::= TYPE_SPECIFIER ID OPENBRACKET PARAMS CLOSEBRACKET COMPOUND_STMT \n";
+   		RESULT = new AstFunDec(ts,id,pa,cs,"funDecl",tsleft);
+   :};
+   //state 10
+   params::= param_list:pl{:
+   		this.parser.produc += "PARAMS::= PARAM_LIST \n";
+   		RESULT = pl;
+   :}
+   //state 11
+   | VOID:v{:
+   		this.parser.produc += "PARAMS::= VOID \n";
+         RESULT = new AstParamDec(sym.VOID,null,false,"paramDecl",vleft);
+   :};
+
+
+
+   //state 12
+   param_list::= param_list:pl COMA param:p{:
+   		this.parser.produc += "PARAM_LIST::= PARAM_LIST COMA PARAM \n";
+   		RESULT = p;
+   		p.setHermano(pl);
+   :}
+   //state 13
+   | param:p{:
+   		this.parser.produc += "PARAM_LIST::= PARAM \n";
+   		RESULT = p;
+   :};
+
+
+
+   //state 14
+   param::= type_specifier:ts ID:id{:
+   		this.parser.produc += "PARAM::= TYPE_SPECIFIER ID \n";
+   		RESULT = new AstParamDec(ts,id,false,"paramDecl",tsleft);
+   :}
+   //state 15
+   | type_specifier:ts ID:id OPENBRACKETCOR CLOSEBRACKETCOR{:
+   		this.parser.produc += "PARAM::= TYPE_SPECIFIER ID OPENBRACKETCOR CLOSEBRACKETCOR \n";
+   		RESULT = new AstParamDec(ts,id,true,"paramDecl",tsleft);
+   :};
+
+
+
+   //state 16
+   compound_stmt::= OPENBRACKETLL:li local_declarations:ld statement_list:sl CLOSEBRACKETLL{:
+   		this.parser.produc += "COMPOUND_STMT::= OPENBRACKETLL LOCAL_DECLARATIONS STATEMENT_LIST CLOSEBRACKETLL\n";
+   		RESULT = new AstCompStmt(ld,sl, "compSt",lileft);
+   :};
+
+
+
+   //state 17
+   local_declarations::= local_declarations:ld var_declaration:vd{:
+   		this.parser.produc += "LOCAL_DECLARATIONS::= LOCAL_DECLARATIONS VAR_DECLARATION\n";
+   		RESULT = vd;
+   		vd.setHermano(ld);
+   :}
+   //state 18
+   | empty  {:
+   		this.parser.produc += "LOCAL_DECLARATIONS::= EMPTY\n";
+   		RESULT = null; //Ya que en la terminal esta Empty.
+   :};
+
+
+
+   //state 19
+   statement_list::= statement_list:sl statement:s{:
+   		this.parser.produc += "STATEMENT_LIST::= STATEMENT_LIST STATEMENT\n";
+   		RESULT = s;
+   		s.setHermano(sl);
+   :}
+   //state 20
+   | empty  {:
+   		this.parser.produc += "STATEMENT_LIST::= EMPTY\n";
+   		RESULT = null; //Ya que en la terminal esta Empty.
+   :};
+
+
+
+   //state 21
+   statement::= expression_stmt:es{:
+   		this.parser.produc += "STATEMENT::= EXPRESSION_STMT\n";
+   		RESULT = es;
+   
+   :}
+   //state 22
+   | compound_stmt:cs{:
+   		this.parser.produc += "STATEMENT::= COMPOUND_STMT\n";
+   		RESULT = cs;
+   :}
+   //state 23
+   | selection_stmt:ss{:
+   		this.parser.produc += "STATEMENT::= SELECTION_STMT\n";
+   		RESULT = ss;
+   :}
+   //state 24
+   | iteration_stmt:is{:
+   		this.parser.produc += "STATEMENT::= ITERATION_STMT\n";
+   		RESULT = is;
+   :}
+   | return_stmt:rs{:
+   		this.parser.produc += "STATEMENT::= RETURN_STMT\n";
+   		RESULT = rs;
+   :};
+   
+
+   
+   expression_stmt::= expression:e PUNTUACTION{:
+         this.parser.tipoExpresion = "expstmt";
+   		this.parser.produc += "EXPRESSION_STMT::= EXPRESSION PUNTUACTION\n";
+   		RESULT = e;
+   :}
+   | PUNTUACTION:pc{:
+   		this.parser.produc += "EXPRESSION_STMT::= PUNTUACTION\n";
+   		RESULT = new AstVaciaStmt("vacio",pcleft+1);
+   :};
+   
+
+   selection_stmt::= IF OPENBRACKET:ob expression:e CLOSEBRACKET statement:s{:
+   		this.parser.produc += "SELECTION_STMT::= IF OPENBRACKET EXPRESSION CLOSEBRACKET STATEMENT\n";
+   		RESULT = new AstSelectStmt(e,s,null,false,"selec",obleft+1);
+   :}
+   | IF OPENBRACKET:ob expression:e CLOSEBRACKET statement:s1 ELSE statement:s2{:
+   		this.parser.produc += "SELECTION_STMT::= IF OPENBRACKET EXPRESSION CLOSEBRACKET STATEMENT ELSE STATEMENT\n";
+   		RESULT = new AstSelectStmt(e,s1,s2,true,"selec",obleft+1);
+   :};
+   
+
+   iteration_stmt::= while_stmt:ws{:
+   		this.parser.produc += "ITERATION_STMT::= WHILE_STMT\n";
+   		RESULT = ws;
+   :}
+   | for_stmt:fs {:
+                this.parser.produc += "iteration_stmt ::= for_stmt\n"; 
+                RESULT = fs; 
+   :};
+   
+
+   while_stmt::= WHILE OPENBRACKET:ob expression:e CLOSEBRACKET statement:s{:
+   		this.parser.produc += "WHILE_STMT::= WHILE OPENBRACKET EXPRESSION OPENBRACKETC STATEMENT\n";
+   		RESULT = new AstIterStmt(e,s,false,"selec",obleft+1);
+   :};
+   
+
+   for_stmt::= FOR OPENBRACKET:ob expression:e1 COMA expression:e2 COMA expression:e3 CLOSEBRACKET statement:s{:
+   		this.parser.produc += "FOR_STMT::= FOR OPENBRACKET expression COMA expression COMA expression OPENBRACKETC STATEMENT\n";
+   		RESULT = new AstIterStmt(e1,e2,e3,s,"selec",obleft+1);
+   :};
+   
+
+   return_stmt::= RETURN:r PUNTUACTION{:
+   		this.parser.produc += "RETURN_STMT::= RETURN PUNTUACTION\n";
+   		RESULT = new AstReturnStmt(null,"retorno",rleft+1);
+   :}
+   | RETURN:r expression:e PUNTUACTION{:
+   		this.parser.produc += "RETURN_STMT::= RETURN EXPRESSION PUNTUACTION\n";
+   		RESULT = new AstReturnStmt(e,"retorno",rleft+1);
+   :};
+   
+
+
+   expression::= var:v ASSIGN expression:e{:
+         this.parser.produc += "EXPRESSION::= VAR ASSIGN EXPRESSION\n";
+   		switch(this.parser.tipoExpresion){
+                                case "expstmt":
+                                RESULT = new AstExpAsign(v,e,sym.ASSIGN,"expstmt",vleft+1);
+                                break;
+                                default:
+                                RESULT = new AstExpAsign(v,e,sym.ASSIGN,"expreAsig",vleft+1);
+                                }
+   :}
+   | simple_expression:se{:
+   		this.parser.produc += "EXPRESSION::= SIMPLE_EXPRESSION\n";
+   		RESULT = se;
+   :};
+
+
+   var::= ID:id{:
+         this.parser.produc += "VAR::= ID\n";
+   		RESULT = new AstExpVar(null,id,false,"expreVar",idleft+1);
+   :}
+   | ID:id OPENBRACKETCOR expression:e CLOSEBRACKETCOR{:
+   		this.parser.produc += "VAR::= ID OPENBRACKETCOR EXPRESSION CLOSEBRACKETCOR\n";
+         RESULT = new AstExpVar(e,id,true,"expreVar",idleft+1);
+   :};
+   
+
+   simple_expression::= additive_expression:ae1 relop:r additive_expression:ae2{:
+         this.parser.produc += "SIMPLE_EXPRESION::= ADITIVE_EXPRESION RELOP ADITIVE_EXPRESION\n";
+   		RESULT = new AstExpBin(r,ae1,ae2,"operador",ae1left+1);
+   :}
+   | additive_expression:ae{:
+   		this.parser.produc += "SIMPLE_EXPRESION::= ADITIVE_EXPRESION\n";
+   		RESULT = ae;
+   :}; 
+   
+
+   relop::= MINEQ{:
+   		this.parser.produc += "RELOP::= MINEQ\n";
+   		RESULT = sym.MINEQ;
+   :}
+   | MINOR{:
+   		this.parser.produc += "RELOP::= MINOR\n";
+   		RESULT = sym.MINOR;
+   :}
+   | MAYOR{:
+   		this.parser.produc += "RELOP::= MAYOR\n";
+   		RESULT = sym.MAYOR;
+   :}
+   | MAYEQ{:
+   		this.parser.produc += "RELOP::= MAYEQ\n";
+   		RESULT = sym.MAYEQ;
+   :}
+   | EQ{:
+   		this.parser.produc += "RELOP::= EQ\n";
+   		RESULT = sym.EQ;
+   :}
+   | NEQ{:
+   		this.parser.produc += "RELOP::= NEQ\n";
+   		RESULT = sym.NEQ;
+   :};
+   
+
+   additive_expression::= additive_expression:ae addop:a term:t{:
+   		this.parser.produc += "ADDITIVE_EXPRESSION::= ADDITIVE_EXPRESSION ADDOP TERM\n";
+   		RESULT = new AstExpBin(a,ae,t,"operador",tleft+1);
+   :}
+   | term:t{:
+   		this.parser.produc += "ADDITIVE_EXPRESSION::= TERM\n";
+   		RESULT = t;
+   :};
+   
+
+   addop::= ADD{:
+   		this.parser.produc += "ADDOP::= ADD\n";
+   		RESULT = sym.ADD;
+   :}
+   | SUBT{:
+   		this.parser.produc += "ADDOP::= SUBT\n";
+   		RESULT = sym.SUBT;
+   :};
+   
+
+   term::= term:t mulop:m factor:f{:
+   		this.parser.produc += "TERM::= TERM MULOP FACTOR\n";
+   		RESULT = new AstExpBin(m,t,f,"operador",tleft+1);
+   :}
+   | factor:f{:
+   		this.parser.produc += "TERM::= FACTOR\n";
+   		RESULT = f;
+   :};
+   
+
+   mulop::= MULT{:
+   		this.parser.produc += "MULOP::= MULT\n";
+   		RESULT = sym.MULT;
+   :}
+   | DIV{:
+   		this.parser.produc += "MULOP::= DIV\n";
+   		RESULT = sym.DIV;
+   :};
+   
+
+   factor::= factor:f powop:p exp:ex{:
+   		this.parser.produc += "FACTOR::= FACTOR POWOP EXP\n";
+   		RESULT = ex;
+   :}
+   | exp:ex{:
+   		this.parser.produc += "FACTOR::= EXP\n";
+   		RESULT = ex;
+   :};
+   
+
+   powop::= POT{:
+   		this.parser.produc += "POWOP::= POT\n";
+   		RESULT = sym.POT;
+   :}
+   | ROOT{:
+   		this.parser.produc += "POWOP::= ROOT\n";
+   		RESULT = sym.ROOT;
+   :};
+   
+
+   exp::= OPENBRACKET expression:e CLOSEBRACKET{:
+   		this.parser.produc += "EXP::= OPENBRACKET EXPRESSION CLOSEBRACKET\n";
+   		RESULT = e;
+   :}
+   | var:v{:
+   		this.parser.produc += "EXP::= VAR\n";
+   		RESULT = v;
+   :}
+   | call:c{:
+   		this.parser.produc += "EXP::= CALL\n";
+   		RESULT = c;
+   :}
+   | NUM:n{:
+   		this.parser.produc += "EXP::= NUM\n";
+         RESULT = new AstExpConst(n,"constante",nleft+1);
+   :};
+   
+
+   call::= ID:id OPENBRACKET args:a CLOSEBRACKET{:
+   		this.parser.produc += "CALL::= ID OPENBRACKET ARGS CLOSEBRACKET\n";
+   		RESULT = new AstExpFun(id,a,"expFun",idleft+1);
+   :}; 
+   
+
+   args::= arg_list:al{:
+   		this.parser.produc += "ARGS::= ARG_LIST\n";
+   		RESULT = al;
+   :}
+   | empty {:
+   		this.parser.produc += "ARGS::= EMPTY\n";
+   		RESULT = null;
+   :};
+   
+
+   arg_list::= arg_list:al COMA expression:e{:
+   		this.parser.produc += "ARG_LIST::= ARG_LIST COMA EXPRESSION\n";
+   		RESULT = e;
+   		e.setHermano(al);
+   :}
+   | expression:e{:
+   		this.parser.produc += "ARG_LIST::= EXPRESSION\n";
+   		RESULT = e;
+   :};
+   
+
+   empty ::= ;

@@ -1,0 +1,30 @@
+digraph g{1->2
+2->3
+2->4
+2->5
+5->6
+5->7
+7->8
+8->9
+8->10
+7->11
+11->12
+11->13
+1->14
+1->15
+1[label="Program"]
+2[label="Funcion[fact,void]"]
+3[label="ParamDec[k,VOID]"]
+4[label="ParamDec[x,INT]"]
+5[label="Cuerpo{}"]
+6[label="Vacio,"]
+7[label="Else{}"]
+8[label="IGUAL"]
+9[label="Expression[ x = ]"]
+10[label="Constante,1"]
+11[label="Return"]
+12[label="Expression[ x = ]"]
+13[label="Expression[ x = ]"]
+14 [label="Variable, w int"];
+15 [label="Variable, y int"];
+}

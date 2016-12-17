@@ -1,0 +1,8 @@
+int y;
+int w;
+void fact( int x, int k[])
+{ 
+	if (x == 1)
+    	return x;
+    ;
+}
